@@ -43,7 +43,8 @@ impl TextEmbedding {
             max_length,
             cache_dir,
             show_download_progress,
-            thread_nums,
+            node_thread_nums,
+            graph_thread_nums,
             parallel_execution,
         } = options;
 
@@ -73,7 +74,8 @@ impl TextEmbedding {
         let session = Session::builder()?
             .with_execution_providers(execution_providers)?
             .with_optimization_level(GraphOptimizationLevel::Level3)?
-            .with_intra_threads(thread_nums.get())?
+            .with_intra_threads(node_thread_nums.get())?
+            .with_inter_threads(graph_thread_nums.get())?
             .with_parallel_execution(parallel_execution)?
             .commit_from_file(model_file_reference)?;
 
@@ -96,14 +98,16 @@ impl TextEmbedding {
         let InitOptionsUserDefined {
             execution_providers,
             max_length,
-            thread_nums,
+            node_thread_nums,
+            graph_thread_nums,
             parallel_execution,
         } = options;
 
         let session = Session::builder()?
             .with_execution_providers(execution_providers)?
             .with_optimization_level(GraphOptimizationLevel::Level3)?
-            .with_intra_threads(thread_nums.get())?
+            .with_intra_threads(node_thread_nums.get())?
+            .with_inter_threads(graph_thread_nums.get())?
             .with_parallel_execution(parallel_execution)?
             .commit_from_memory(&model.onnx_file)?;
 

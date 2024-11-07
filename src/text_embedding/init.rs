@@ -25,7 +25,8 @@ pub struct InitOptions {
     pub cache_dir: PathBuf,
     pub show_download_progress: bool,
     /// parallel execution maximum number of threads, only active when parallel_execution is true
-    pub thread_nums: NonZero<usize>,
+    pub node_thread_nums: NonZero<usize>,
+    pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
 }
 
@@ -65,9 +66,15 @@ impl InitOptions {
         self
     }
 
-    /// Set the number of threads for parallel execution
-    pub fn with_thread_nums(mut self, thread_nums: NonZero<usize>) -> Self {
-        self.thread_nums = thread_nums;
+    /// Set the node number of threads for parallel execution
+    pub fn with_node_thread_nums(mut self, thread_nums: NonZero<usize>) -> Self {
+        self.node_thread_nums = thread_nums;
+        self
+    }
+
+    /// Set the graph number of threads for parallel execution
+    pub fn with_graph_thread_nums(mut self, thread_nums: NonZero<usize>) -> Self {
+        self.graph_thread_nums = thread_nums;
         self
     }
 
@@ -75,7 +82,8 @@ impl InitOptions {
     pub fn with_parallel_execution(mut self, parallel_execution: bool) -> Self {
         self.parallel_execution = parallel_execution;
         if !parallel_execution {
-            self.thread_nums = NonZero::new(1).unwrap();
+            self.node_thread_nums = NonZero::new(1).unwrap();
+            self.graph_thread_nums = NonZero::new(1).unwrap();
         }
         self
     }
@@ -90,7 +98,8 @@ impl Default for InitOptions {
             max_length: DEFAULT_MAX_LENGTH,
             cache_dir: Path::new(DEFAULT_CACHE_DIR).to_path_buf(),
             show_download_progress: true,
-            thread_nums,
+            node_thread_nums: thread_nums,
+            graph_thread_nums: thread_nums,
             parallel_execution: true,
         }
     }
@@ -105,7 +114,8 @@ pub struct InitOptionsUserDefined {
     pub execution_providers: Vec<ExecutionProviderDispatch>,
     pub max_length: usize,
     /// parallel execution maximum number of threads, only active when parallel_execution is true
-    pub thread_nums: NonZero<usize>,
+    pub node_thread_nums: NonZero<usize>,
+    pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
 }
 
@@ -129,15 +139,21 @@ impl InitOptionsUserDefined {
         self
     }
 
-    pub fn with_thread_nums(mut self, thread_nums: NonZero<usize>) -> Self {
-        self.thread_nums = thread_nums;
+    pub fn with_node_thread_nums(mut self, thread_nums: NonZero<usize>) -> Self {
+        self.node_thread_nums = thread_nums;
+        self
+    }
+
+    pub fn with_graph_thread_nums(mut self, thread_nums: NonZero<usize>) -> Self {
+        self.graph_thread_nums = thread_nums;
         self
     }
 
     pub fn with_parallel_execution(mut self, parallel_execution: bool) -> Self {
         self.parallel_execution = parallel_execution;
         if !parallel_execution {
-            self.thread_nums = NonZero::new(1).unwrap();
+            self.node_thread_nums = NonZero::new(1).unwrap();
+            self.graph_thread_nums = NonZero::new(1).unwrap();
         }
         self
     }
@@ -149,7 +165,8 @@ impl Default for InitOptionsUserDefined {
         Self {
             execution_providers: Default::default(),
             max_length: DEFAULT_MAX_LENGTH,
-            thread_nums,
+            node_thread_nums: thread_nums,
+            graph_thread_nums: thread_nums,
             parallel_execution: true,
         }
     }
@@ -163,7 +180,8 @@ impl From<InitOptions> for InitOptionsUserDefined {
         InitOptionsUserDefined {
             execution_providers: options.execution_providers,
             max_length: options.max_length,
-            thread_nums: options.thread_nums,
+            thread_nums: options.node_thread_nums,
+            graph_thread_nums: options.graph_thread_nums,
             parallel_execution: options.parallel_execution,
         }
     }
