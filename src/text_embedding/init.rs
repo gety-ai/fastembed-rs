@@ -180,7 +180,7 @@ impl From<InitOptions> for InitOptionsUserDefined {
         InitOptionsUserDefined {
             execution_providers: options.execution_providers,
             max_length: options.max_length,
-            thread_nums: options.node_thread_nums,
+            node_thread_nums: options.node_thread_nums,
             graph_thread_nums: options.graph_thread_nums,
             parallel_execution: options.parallel_execution,
         }
