@@ -226,7 +226,8 @@ impl TextEmbedding {
         }?;
 
         let batches =
-            anyhow::Result::<Vec<_>>::from_par_iter(texts.par_chunks(batch_size).map(|batch| {
+            // anyhow::Result::<Vec<_>>::from_par_iter(texts.par_chunks(batch_size).map(|batch| {
+                anyhow::Result::<Vec<_>>::from_iter(texts.chunks(batch_size).map(|batch| {
                 // Encode the texts in the batch
                 let inputs = batch.iter().map(|text| text.as_ref()).collect();
                 let encodings = self.tokenizer.encode_batch(inputs, true).map_err(|e| {
