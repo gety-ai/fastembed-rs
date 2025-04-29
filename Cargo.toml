@@ -26,12 +26,14 @@ anyhow = { version = "1" }
 hf-hub = { version = "0.4.1", default-features = false, optional = true }
 image = "0.25.2"
 ndarray = { version = "0.16", default-features = false }
-ort = { version = "=2.0.0-rc.9", default-features = false, features = [
+ort = { git = "https://github.com/pykeio/ort.git", rev = "75ec921", default-features = false, features = [
+  "std",
   "ndarray",
 ] }
 rayon = { version = "1.10", default-features = false }
 serde_json = { version = "1" }
 tokenizers = { version = "0.21", default-features = false, features = ["onig"] }
+parking_lot = { version = "0.12" }
 
 [features]
 default = ["ort-download-binaries", "hf-hub-native-tls"]

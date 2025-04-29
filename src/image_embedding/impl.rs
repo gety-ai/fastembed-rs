@@ -1,7 +1,7 @@
 #[cfg(feature = "hf-hub")]
 use hf_hub::api::sync::ApiRepo;
 use image::DynamicImage;
-use ndarray::{Array3, ArrayView3};
+use ndarray::{Array3, ArrayView, ArrayView3};
 use ort::{
     session::{builder::GraphOptimizationLevel, Session},
     value::Value,
@@ -25,7 +25,6 @@ use super::{
     utils::{Compose, Transform, TransformData},
     ImageEmbedding, DEFAULT_BATCH_SIZE,
 };
-use rayon::prelude::*;
 
 impl ImageEmbedding {
     /// Try to generate a new ImageEmbedding Instance
@@ -128,14 +127,14 @@ impl ImageEmbedding {
 
     /// Method to generate image embeddings for a Vec of image bytes
     pub fn embed_bytes(
-        &self,
+        &mut self,
         images: &[&[u8]],
         batch_size: Option<usize>,
     ) -> anyhow::Result<Vec<Embedding>> {
         let batch_size = batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
 
         let output = images
-            .par_chunks(batch_size)
+            .chunks(batch_size)
             .map(|batch| {
                 // Encode the texts in the batch
                 let inputs = batch
@@ -161,7 +160,7 @@ impl ImageEmbedding {
     /// Method to generate image embeddings for a Vec of image path
     // Generic type to accept String, &str, OsString, &OsStr
     pub fn embed<S: AsRef<Path> + Send + Sync>(
-        &self,
+        &mut self,
         images: Vec<S>,
         batch_size: Option<usize>,
     ) -> anyhow::Result<Vec<Embedding>> {
@@ -169,7 +168,7 @@ impl ImageEmbedding {
         let batch_size = batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
 
         let output = images
-            .par_chunks(batch_size)
+            .chunks(batch_size)
             .map(|batch| {
                 // Encode the texts in the batch
                 let inputs = batch
@@ -192,7 +191,7 @@ impl ImageEmbedding {
     }
 
     /// Embed DynamicImages
-    pub fn embed_images(&self, imgs: Vec<DynamicImage>) -> anyhow::Result<Vec<Embedding>> {
+    pub fn embed_images(&mut self, imgs: Vec<DynamicImage>) -> anyhow::Result<Vec<Embedding>> {
         let inputs = imgs
             .into_iter()
             .map(|img| {
@@ -211,7 +210,7 @@ impl ImageEmbedding {
         let input_name = self.session.inputs[0].name.clone();
         let session_inputs = ort::inputs![
             input_name => Value::from_array(pixel_values_array)?,
-        ]?;
+        ];
 
         let outputs = self.session.run(session_inputs)?;
 
@@ -223,7 +222,7 @@ impl ImageEmbedding {
         };
 
         // Extract tensor and handle different dimensionalities
-        let output_data = last_hidden_state_key
+        let (shape, tensor) = last_hidden_state_key
             .iter()
             .find_map(|&key| {
                 outputs
@@ -231,7 +230,8 @@ impl ImageEmbedding {
                     .and_then(|v| v.try_extract_tensor::<f32>().ok())
             })
             .ok_or_else(|| anyhow!("Could not extract tensor from any known output key"))?;
-        let shape = output_data.shape();
+
+        let output_data = unsafe { ArrayView::from_shape_ptr(shape.to_ixdyn(), tensor.as_ptr()) };
 
         let embeddings = match shape.len() {
             3 => {
@@ -240,8 +240,9 @@ impl ImageEmbedding {
                 // and return [batch_size, hidden_size]
                 (0..shape[0])
                     .map(|batch_idx| {
-                        let cls_embedding =
-                            output_data.slice(ndarray::s![batch_idx, 0, ..]).to_vec();
+                        let cls_embedding = output_data
+                            .slice(ndarray::s![batch_idx as isize, 0, ..])
+                            .to_vec();
                         normalize(&cls_embedding)
                     })
                     .collect()

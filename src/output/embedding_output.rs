@@ -46,7 +46,7 @@ impl SingleBatchOutput<'_, '_> {
             })?;
 
         ort_output
-            .try_extract_tensor::<f32>()
+            .try_extract_array::<f32>()
             .map_err(anyhow::Error::new)
     }
 
@@ -113,7 +113,7 @@ impl<'r, 's> EmbeddingOutput<'r, 's> {
         &self,
         // TODO: Convert this to a trait alias when it's stabilized.
         // https://github.com/rust-lang/rust/issues/41517
-        transformer: impl Fn(&[SingleBatchOutput]) -> anyhow::Result<R>,
+        transformer: impl Fn(&[SingleBatchOutput<'r, 's>]) -> anyhow::Result<R>,
     ) -> anyhow::Result<R> {
         transformer(&self.batches)
     }

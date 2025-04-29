@@ -3,7 +3,7 @@ use anyhow::Context;
 use anyhow::Result;
 use ort::{
     session::{builder::GraphOptimizationLevel, Session},
-    value::Value,
+    value::{TensorRef, Value},
 };
 use std::thread::available_parallelism;
 
@@ -15,7 +15,7 @@ use crate::{
 };
 #[cfg(feature = "hf-hub")]
 use hf_hub::{api::sync::ApiBuilder, Cache};
-use ndarray::{s, Array};
+use ndarray::{s, Array, ArrayView};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tokenizers::Tokenizer;
 
@@ -124,7 +124,7 @@ impl TextRerank {
 
     /// Rerank documents using the reranker model and returns the results sorted by score in descending order.
     pub fn rerank<S: AsRef<str> + Send + Sync>(
-        &self,
+        &mut self,
         query: S,
         documents: Vec<S>,
         return_documents: bool,
@@ -135,7 +135,7 @@ impl TextRerank {
         let q = query.as_ref();
 
         let scores: Vec<f32> = documents
-            .par_chunks(batch_size)
+            .chunks(batch_size)
             .map(|batch| {
                 let inputs = batch.iter().map(|d| (q, d.as_ref())).collect();
 
@@ -175,7 +175,7 @@ impl TextRerank {
                 let mut session_inputs = ort::inputs![
                     "input_ids" => Value::from_array(inputs_ids_array)?,
                     "attention_mask" => Value::from_array(attention_mask_array)?,
-                ]?;
+                ];
 
                 if self.need_token_type_ids {
                     session_inputs.push((
@@ -187,7 +187,7 @@ impl TextRerank {
                 let outputs = self.session.run(session_inputs)?;
 
                 let outputs = outputs["logits"]
-                    .try_extract_tensor::<f32>()
+                    .try_extract_array::<f32>()
                     .expect("Failed to extract logits tensor");
 
                 let scores: Vec<f32> = outputs

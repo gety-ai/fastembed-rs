@@ -10,7 +10,10 @@ use anyhow::Result;
 #[cfg(feature = "hf-hub")]
 use hf_hub::api::sync::ApiRepo;
 use ndarray::{Array, ArrayViewD, Axis, CowArray, Dim};
-use ort::{session::Session, value::Value};
+use ort::{
+    session::Session,
+    value::{TensorRef, Value},
+};
 #[cfg_attr(not(feature = "hf-hub"), allow(unused_imports))]
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 #[cfg(feature = "hf-hub")]
@@ -108,7 +111,7 @@ impl SparseTextEmbedding {
     /// Method to generate sentence embeddings for a Vec of texts
     // Generic type to accept String, &str, OsString, &OsStr
     pub fn embed<S: AsRef<str> + Send + Sync>(
-        &self,
+        &mut self,
         texts: Vec<S>,
         batch_size: Option<usize>,
     ) -> Result<Vec<SparseEmbedding>> {
@@ -116,7 +119,7 @@ impl SparseTextEmbedding {
         let batch_size = batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
 
         let output = texts
-            .par_chunks(batch_size)
+            .chunks(batch_size)
             .map(|batch| {
                 // Encode the texts in the batch
                 let inputs = batch.iter().map(|text| text.as_ref()).collect();
@@ -158,8 +161,8 @@ impl SparseTextEmbedding {
 
                 let mut session_inputs = ort::inputs![
                     "input_ids" => Value::from_array(inputs_ids_array)?,
-                    "attention_mask" => Value::from_array(&attention_mask_array)?,
-                ]?;
+                    "attention_mask" => TensorRef::from_array_view(&attention_mask_array)?,
+                ];
 
                 if self.need_token_type_ids {
                     session_inputs.push((
@@ -177,7 +180,7 @@ impl SparseTextEmbedding {
                     _ => "last_hidden_state",
                 };
 
-                let output_data = outputs[last_hidden_state_key].try_extract_tensor::<f32>()?;
+                let output_data = outputs[last_hidden_state_key].try_extract_array::<f32>()?;
 
                 let embeddings = SparseTextEmbedding::post_process(
                     &self.model,

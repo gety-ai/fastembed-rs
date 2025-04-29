@@ -7,6 +7,7 @@ use crate::{
     EmbeddingModel, QuantizationMode,
 };
 use ort::{execution_providers::ExecutionProviderDispatch, session::Session};
+use parking_lot::Mutex;
 use std::path::{Path, PathBuf};
 use tokenizers::Tokenizer;
 
