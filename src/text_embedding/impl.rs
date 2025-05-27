@@ -45,6 +45,7 @@ impl TextEmbedding {
             node_thread_nums,
             graph_thread_nums,
             parallel_execution,
+            optimization_level,
         } = options;
 
         let model_repo = TextEmbedding::retrieve_model(
@@ -72,7 +73,11 @@ impl TextEmbedding {
 
         let session = Session::builder()?
             .with_execution_providers(execution_providers)?
-            .with_optimization_level(GraphOptimizationLevel::Level3)?
+            .with_optimization_level(
+                optimization_level
+                    .map(|x| x.into())
+                    .unwrap_or(GraphOptimizationLevel::Level3),
+            )?
             .with_intra_threads(node_thread_nums.get())?
             .with_inter_threads(graph_thread_nums.get())?
             .with_parallel_execution(parallel_execution)?
@@ -100,11 +105,16 @@ impl TextEmbedding {
             node_thread_nums,
             graph_thread_nums,
             parallel_execution,
+            optimization_level,
         } = options;
 
         let session = Session::builder()?
             .with_execution_providers(execution_providers)?
-            .with_optimization_level(GraphOptimizationLevel::Level3)?
+            .with_optimization_level(
+                optimization_level
+                    .map(|x| x.into())
+                    .unwrap_or(GraphOptimizationLevel::Level3),
+            )?
             .with_intra_threads(node_thread_nums.get())?
             .with_inter_threads(graph_thread_nums.get())?
             .with_parallel_execution(parallel_execution)?

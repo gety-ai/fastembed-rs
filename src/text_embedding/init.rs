@@ -6,8 +6,10 @@ use crate::{
     pooling::Pooling,
     EmbeddingModel, QuantizationMode,
 };
-use ort::{execution_providers::ExecutionProviderDispatch, session::Session};
-use parking_lot::Mutex;
+use ort::{
+    execution_providers::ExecutionProviderDispatch,
+    session::{builder::GraphOptimizationLevel, Session},
+};
 use std::{
     num::NonZero,
     path::{Path, PathBuf},
@@ -29,6 +31,7 @@ pub struct InitOptions {
     pub node_thread_nums: NonZero<usize>,
     pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
+    pub optimization_level: Option<GraphOptimizationLevelWrap>,
 }
 
 impl InitOptions {
@@ -88,6 +91,12 @@ impl InitOptions {
         }
         self
     }
+
+    /// Set the optimization level for the model
+    pub fn with_optimization_level(mut self, optimization_level: GraphOptimizationLevel) -> Self {
+        self.optimization_level = Some(optimization_level.into());
+        self
+    }
 }
 
 impl Default for InitOptions {
@@ -102,7 +111,33 @@ impl Default for InitOptions {
             node_thread_nums: thread_nums,
             graph_thread_nums: thread_nums,
             parallel_execution: true,
+            optimization_level: None,
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct GraphOptimizationLevelWrap(GraphOptimizationLevel);
+impl Clone for GraphOptimizationLevelWrap {
+    fn clone(&self) -> Self {
+        Self(match self.0 {
+            GraphOptimizationLevel::Level1 => GraphOptimizationLevel::Level1,
+            GraphOptimizationLevel::Level2 => GraphOptimizationLevel::Level2,
+            GraphOptimizationLevel::Level3 => GraphOptimizationLevel::Level3,
+            GraphOptimizationLevel::Disable => GraphOptimizationLevel::Disable,
+        })
+    }
+}
+
+impl From<GraphOptimizationLevel> for GraphOptimizationLevelWrap {
+    fn from(level: GraphOptimizationLevel) -> Self {
+        Self(level)
+    }
+}
+
+impl From<GraphOptimizationLevelWrap> for GraphOptimizationLevel {
+    fn from(level: GraphOptimizationLevelWrap) -> Self {
+        level.0
     }
 }
 
@@ -118,6 +153,7 @@ pub struct InitOptionsUserDefined {
     pub node_thread_nums: NonZero<usize>,
     pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
+    pub optimization_level: Option<GraphOptimizationLevelWrap>,
 }
 
 impl InitOptionsUserDefined {
@@ -159,6 +195,11 @@ impl InitOptionsUserDefined {
 
         self
     }
+
+    pub fn with_optimization_level(mut self, optimization_level: GraphOptimizationLevel) -> Self {
+        self.optimization_level = Some(optimization_level.into());
+        self
+    }
 }
 
 impl Default for InitOptionsUserDefined {
@@ -170,6 +211,7 @@ impl Default for InitOptionsUserDefined {
             node_thread_nums: thread_nums,
             graph_thread_nums: thread_nums,
             parallel_execution: true,
+            optimization_level: None,
         }
     }
 }
@@ -185,6 +227,7 @@ impl From<InitOptions> for InitOptionsUserDefined {
             node_thread_nums: options.node_thread_nums,
             graph_thread_nums: options.graph_thread_nums,
             parallel_execution: options.parallel_execution,
+            optimization_level: options.optimization_level,
         }
     }
 }
