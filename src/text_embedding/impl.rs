@@ -265,7 +265,7 @@ impl TextEmbedding {
         &'e mut self,
         texts: Vec<S>,
         batch_size: Option<usize>,
-    ) -> Result<EmbeddingOutput<'s, 's>>
+    ) -> Result<EmbeddingOutput<'s>>
     where
         'e: 's,
     {

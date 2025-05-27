@@ -10,12 +10,12 @@ use super::{OutputKey, OutputPrecedence};
 /// In the future, each batch will need to deal with its own post-processing, such as
 /// pooling etc. This struct should contain all the necessary information for the
 /// post-processing to be performed.
-pub struct SingleBatchOutput<'r, 's> {
-    pub session_outputs: SessionOutputs<'r, 's>,
+pub struct SingleBatchOutput<'r> {
+    pub session_outputs: SessionOutputs<'r>,
     pub attention_mask_array: Array2<i64>,
 }
 
-impl SingleBatchOutput<'_, '_> {
+impl<'r> SingleBatchOutput<'r> {
     /// Select the output from the session outputs based on the given precedence.
     ///
     /// This returns a view into the tensor, which can be used to perform further
@@ -77,13 +77,13 @@ impl SingleBatchOutput<'_, '_> {
 /// Container struct with all the outputs from the embedding layer.
 ///
 /// This will contain one [`SingleBatchOutput`] object per batch/inference call.
-pub struct EmbeddingOutput<'r, 's> {
-    batches: Vec<SingleBatchOutput<'r, 's>>,
+pub struct EmbeddingOutput<'r> {
+    batches: Vec<SingleBatchOutput<'r>>,
 }
 
-impl<'r, 's> EmbeddingOutput<'r, 's> {
+impl<'r> EmbeddingOutput<'r> {
     /// Create a new [`EmbeddingOutput`] from a [`ort::SessionOutputs`] object.
-    pub fn new(batches: impl IntoIterator<Item = SingleBatchOutput<'r, 's>>) -> Self {
+    pub fn new(batches: impl IntoIterator<Item = SingleBatchOutput<'r>>) -> Self {
         Self {
             batches: batches.into_iter().collect(),
         }
@@ -93,7 +93,7 @@ impl<'r, 's> EmbeddingOutput<'r, 's> {
     ///
     /// This allows the user to perform their custom extractions outside of this
     /// library.
-    pub fn into_raw(self) -> Vec<SingleBatchOutput<'r, 's>> {
+    pub fn into_raw(self) -> Vec<SingleBatchOutput<'r>> {
         self.batches
     }
 
@@ -113,7 +113,7 @@ impl<'r, 's> EmbeddingOutput<'r, 's> {
         &self,
         // TODO: Convert this to a trait alias when it's stabilized.
         // https://github.com/rust-lang/rust/issues/41517
-        transformer: impl Fn(&[SingleBatchOutput<'r, 's>]) -> anyhow::Result<R>,
+        transformer: impl Fn(&[SingleBatchOutput<'r>]) -> anyhow::Result<R>,
     ) -> anyhow::Result<R> {
         transformer(&self.batches)
     }
