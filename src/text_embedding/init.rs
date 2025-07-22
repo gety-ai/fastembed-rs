@@ -29,6 +29,7 @@ pub struct InitOptions {
     pub node_thread_nums: NonZero<usize>,
     pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
+    pub profiling_output: Option<PathBuf>,
 }
 
 impl InitOptions {
@@ -88,6 +89,12 @@ impl InitOptions {
         }
         self
     }
+
+    /// Set ProfilingOutput
+    pub fn with_profiling_output(mut self, profiling_output: &Path) -> Self {
+        self.profiling_output = Some(profiling_output.to_path_buf());
+        self
+    }
 }
 
 impl Default for InitOptions {
@@ -102,6 +109,7 @@ impl Default for InitOptions {
             node_thread_nums: thread_nums,
             graph_thread_nums: thread_nums,
             parallel_execution: true,
+            profiling_output: None,
         }
     }
 }
@@ -118,6 +126,7 @@ pub struct InitOptionsUserDefined {
     pub node_thread_nums: NonZero<usize>,
     pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
+    pub profiling_output: Option<PathBuf>,
 }
 
 impl InitOptionsUserDefined {
@@ -159,6 +168,11 @@ impl InitOptionsUserDefined {
 
         self
     }
+
+    pub fn with_profiling_output(mut self, profiling_output: &Path) -> Self {
+        self.profiling_output = Some(profiling_output.to_path_buf());
+        self
+    }
 }
 
 impl Default for InitOptionsUserDefined {
@@ -170,6 +184,7 @@ impl Default for InitOptionsUserDefined {
             node_thread_nums: thread_nums,
             graph_thread_nums: thread_nums,
             parallel_execution: true,
+            profiling_output: None,
         }
     }
 }
@@ -185,6 +200,7 @@ impl From<InitOptions> for InitOptionsUserDefined {
             node_thread_nums: options.node_thread_nums,
             graph_thread_nums: options.graph_thread_nums,
             parallel_execution: options.parallel_execution,
+            profiling_output: options.profiling_output,
         }
     }
 }
@@ -227,6 +243,7 @@ pub struct TextEmbedding {
     pub tokenizer: Tokenizer,
     pub(crate) pooling: Option<Pooling>,
     pub(crate) session: Session,
+    pub(crate) enable_profiling: bool,
     pub(crate) need_token_type_ids: bool,
     pub(crate) quantization: QuantizationMode,
 }
