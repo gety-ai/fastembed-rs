@@ -69,8 +69,10 @@ impl TextEmbedding {
 
         // prioritise loading pooling config if available, if not (thanks qdrant!), look for it in hardcoded
         let post_processing = TextEmbedding::get_default_pooling_method(&model_name);
-
+        eprintln!("profiling: {:?}", "onnx_model.json");
         let session = Session::builder()?
+            .with_profiling("onnx_model.json")
+            .unwrap()
             .with_execution_providers(execution_providers)?
             .with_optimization_level(GraphOptimizationLevel::Level3)?
             .with_intra_threads(node_thread_nums.get())?
@@ -102,7 +104,11 @@ impl TextEmbedding {
             parallel_execution,
         } = options;
 
+        eprintln!("profiling: {:?}", "onnx_model.json");
+
         let session = Session::builder()?
+            .with_profiling("onnx_model.json")
+            .unwrap()
             .with_execution_providers(execution_providers)?
             .with_optimization_level(GraphOptimizationLevel::Level3)?
             .with_intra_threads(node_thread_nums.get())?
@@ -265,7 +271,7 @@ impl TextEmbedding {
         &'e mut self,
         texts: Vec<S>,
         batch_size: Option<usize>,
-    ) -> Result<EmbeddingOutput<'s, 's>>
+    ) -> Result<EmbeddingOutput<'s>>
     where
         'e: 's,
     {
@@ -350,9 +356,11 @@ impl TextEmbedding {
                 SingleBatchOutput {
                     // TODO: double check if this is safe
                     session_outputs: unsafe {
-                        (*session_ptr)
+                        let session_outputs = (*session_ptr)
                             .run(session_inputs)
-                            .map_err(anyhow::Error::new)?
+                            .map_err(anyhow::Error::new)?;
+                        (*session_ptr).end_profiling();
+                        session_outputs
                     },
                     attention_mask_array,
                 },
