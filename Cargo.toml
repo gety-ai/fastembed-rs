@@ -26,7 +26,7 @@ anyhow = { version = "1" }
 hf-hub = { version = "0.4.1", default-features = false, optional = true }
 image = "0.25.2"
 ndarray = { version = "0.16", default-features = false }
-ort = { version = "=2.0.0-rc.10", default-features = false, features = [
+ort = { git = "https://github.com/pykeio/ort.git", rev = "d28c835", default-features = false, features = [
   "std",
   "ndarray",
 ] }
@@ -42,7 +42,7 @@ hf-hub = ["dep:hf-hub", "hf-hub?/ureq"]
 hf-hub-native-tls = ["hf-hub", "hf-hub?/native-tls"]
 hf-hub-rustls-tls = ["hf-hub", "hf-hub?/rustls-tls"]
 
-ort-download-binaries = ["ort/download-binaries"]
+ort-download-binaries = ["ort/download-binaries", "ort/tls-rustls"]
 ort-load-dynamic = ["ort/load-dynamic"]
 
 # This feature does not change any code, but is used to limit tests if

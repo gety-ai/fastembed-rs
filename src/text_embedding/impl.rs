@@ -70,8 +70,10 @@ impl TextEmbedding {
 
         // prioritise loading pooling config if available, if not (thanks qdrant!), look for it in hardcoded
         let post_processing = TextEmbedding::get_default_pooling_method(&model_name);
-
+        eprintln!("profiling: {:?}", "onnx_model.json");
         let session = Session::builder()?
+            .with_profiling("onnx_model.json")
+            .unwrap()
             .with_execution_providers(execution_providers)?
             .with_optimization_level(
                 optimization_level
@@ -108,7 +110,11 @@ impl TextEmbedding {
             optimization_level,
         } = options;
 
+        eprintln!("profiling: {:?}", "onnx_model.json");
+
         let session = Session::builder()?
+            .with_profiling("onnx_model.json")
+            .unwrap()
             .with_execution_providers(execution_providers)?
             .with_optimization_level(
                 optimization_level
@@ -360,9 +366,11 @@ impl TextEmbedding {
                 SingleBatchOutput {
                     // TODO: double check if this is safe
                     session_outputs: unsafe {
-                        (*session_ptr)
+                        let session_outputs = (*session_ptr)
                             .run(session_inputs)
-                            .map_err(anyhow::Error::new)?
+                            .map_err(anyhow::Error::new)?;
+                        (*session_ptr).end_profiling();
+                        session_outputs
                     },
                     attention_mask_array,
                 },
