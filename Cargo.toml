@@ -34,6 +34,7 @@ rayon = { version = "1.10", default-features = false }
 serde_json = { version = "1" }
 tokenizers = { version = "0.21", default-features = false, features = ["onig"] }
 parking_lot = { version = "0.12" }
+log = "0.4"
 
 [features]
 default = ["ort-download-binaries", "hf-hub-native-tls"]

@@ -46,6 +46,7 @@ impl TextEmbedding {
             graph_thread_nums,
             parallel_execution,
             optimization_level,
+            profiling_output,
         } = options;
 
         let model_repo = TextEmbedding::retrieve_model(
@@ -70,10 +71,12 @@ impl TextEmbedding {
 
         // prioritise loading pooling config if available, if not (thanks qdrant!), look for it in hardcoded
         let post_processing = TextEmbedding::get_default_pooling_method(&model_name);
-        eprintln!("profiling: {:?}", "onnx_model.json");
-        let session = Session::builder()?
-            .with_profiling("onnx_model.json")
-            .unwrap()
+
+        let mut builder = Session::builder()?;
+        if let Some(profiling_path) = &profiling_output {
+            builder = builder.with_profiling(profiling_path)?;
+        }
+        let session = builder
             .with_execution_providers(execution_providers)?
             .with_optimization_level(
                 optimization_level
@@ -91,6 +94,7 @@ impl TextEmbedding {
             session,
             post_processing,
             TextEmbedding::get_quantization_mode(&model_name),
+            profiling_output.is_some(),
         ))
     }
 
@@ -108,13 +112,14 @@ impl TextEmbedding {
             graph_thread_nums,
             parallel_execution,
             optimization_level,
+            profiling_output,
         } = options;
 
-        eprintln!("profiling: {:?}", "onnx_model.json");
-
-        let session = Session::builder()?
-            .with_profiling("onnx_model.json")
-            .unwrap()
+        let mut builder = Session::builder()?;
+        if let Some(profiling_path) = &profiling_output {
+            builder = builder.with_profiling(profiling_path)?;
+        }
+        let session = builder
             .with_execution_providers(execution_providers)?
             .with_optimization_level(
                 optimization_level
@@ -132,6 +137,7 @@ impl TextEmbedding {
             session,
             model.pooling,
             model.quantization,
+            profiling_output.is_some(),
         ))
     }
 
@@ -141,6 +147,7 @@ impl TextEmbedding {
         session: Session,
         post_process: Option<Pooling>,
         quantization: QuantizationMode,
+        enable_profiling: bool,
     ) -> Self {
         let need_token_type_ids = session
             .inputs
@@ -153,6 +160,7 @@ impl TextEmbedding {
             need_token_type_ids,
             pooling: post_process,
             quantization,
+            enable_profiling,
         }
     }
     /// Return the TextEmbedding model's directory from cache or remote retrieval
@@ -369,7 +377,11 @@ impl TextEmbedding {
                         let session_outputs = (*session_ptr)
                             .run(session_inputs)
                             .map_err(anyhow::Error::new)?;
-                        (*session_ptr).end_profiling();
+                        if self.enable_profiling {
+                            if let Err(e) = (*session_ptr).end_profiling() {
+                                log::error!("Failed to end profiling: {e:?}");
+                            }
+                        }
                         session_outputs
                     },
                     attention_mask_array,

@@ -32,6 +32,7 @@ pub struct InitOptions {
     pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
     pub optimization_level: Option<GraphOptimizationLevelWrap>,
+    pub profiling_output: Option<PathBuf>,
 }
 
 impl InitOptions {
@@ -97,6 +98,12 @@ impl InitOptions {
         self.optimization_level = Some(optimization_level.into());
         self
     }
+
+    /// Set ProfilingOutput
+    pub fn with_profiling_output(mut self, profiling_output: &Path) -> Self {
+        self.profiling_output = Some(profiling_output.to_path_buf());
+        self
+    }
 }
 
 impl Default for InitOptions {
@@ -112,6 +119,7 @@ impl Default for InitOptions {
             graph_thread_nums: thread_nums,
             parallel_execution: true,
             optimization_level: None,
+            profiling_output: None,
         }
     }
 }
@@ -154,6 +162,7 @@ pub struct InitOptionsUserDefined {
     pub graph_thread_nums: NonZero<usize>,
     pub parallel_execution: bool,
     pub optimization_level: Option<GraphOptimizationLevelWrap>,
+    pub profiling_output: Option<PathBuf>,
 }
 
 impl InitOptionsUserDefined {
@@ -200,6 +209,11 @@ impl InitOptionsUserDefined {
         self.optimization_level = Some(optimization_level.into());
         self
     }
+
+    pub fn with_profiling_output(mut self, profiling_output: &Path) -> Self {
+        self.profiling_output = Some(profiling_output.to_path_buf());
+        self
+    }
 }
 
 impl Default for InitOptionsUserDefined {
@@ -212,6 +226,7 @@ impl Default for InitOptionsUserDefined {
             graph_thread_nums: thread_nums,
             parallel_execution: true,
             optimization_level: None,
+            profiling_output: None,
         }
     }
 }
@@ -228,6 +243,7 @@ impl From<InitOptions> for InitOptionsUserDefined {
             graph_thread_nums: options.graph_thread_nums,
             parallel_execution: options.parallel_execution,
             optimization_level: options.optimization_level,
+            profiling_output: options.profiling_output,
         }
     }
 }
@@ -270,6 +286,7 @@ pub struct TextEmbedding {
     pub tokenizer: Tokenizer,
     pub(crate) pooling: Option<Pooling>,
     pub(crate) session: Session,
+    pub(crate) enable_profiling: bool,
     pub(crate) need_token_type_ids: bool,
     pub(crate) quantization: QuantizationMode,
 }
